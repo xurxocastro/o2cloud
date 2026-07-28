@@ -1,8 +1,8 @@
 # o2cloud
 
 A scriptable, agent-friendly command-line client for **O2 Cloud** — the personal-cloud storage of
-O2 / Telefónica España (`cloud.o2online.es`). The backend is **Funambol OneMediaHub**, reached
-through the SAPI namespace at `https://cloud.o2online.es/sapi/`.
+O2 / Telefónica España (`cloud.o2online.es`). The backend is reached
+through the API namespace at `https://cloud.o2online.es/sapi/`.
 
 `o2cloud` gives you `ls`, `upload`, `download`, `sync`, `share`, `trash`, and more from the terminal,
 with a stable `--json` output contract and frozen exit codes so scripts and AI agents can drive it
@@ -11,8 +11,8 @@ reliably.
 ## Status and disclaimer
 
 > **Unofficial interoperability client.** `o2cloud` is not affiliated with, endorsed by, or supported
-> by O2, Telefónica, or Funambol. There is no official public API; the client speaks an **undocumented
-> SAPI** reverse-engineered from observed traffic, so endpoints may change or break without notice.
+> by O2 or Telefónica. There is no official public API; the client speaks an **undocumented
+> API** reverse-engineered from observed traffic, so endpoints may change or break without notice.
 >
 > It is intended for an account owner to access **their own data**. You are responsible for complying
 > with **O2's Terms of Service** and applicable law. **Use at your own risk.**
