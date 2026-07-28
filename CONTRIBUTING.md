@@ -63,6 +63,36 @@ you add or correct an endpoint, update that reference in the same change.
 - Add a `CHANGELOG.md` entry under a new or existing unreleased version heading.
 - Write clear commit messages describing the intent of the change.
 
+## Releasing
+
+Releases are published to PyPI automatically by the `Publish to PyPI` workflow
+(`.github/workflows/publish.yml`) whenever a GitHub Release is published. It uses PyPI
+**Trusted Publishing** (OpenID Connect), so no PyPI API tokens are stored in the repository.
+
+### One-time setup (PyPI side)
+
+Because the project does not exist on PyPI yet, register a **pending publisher** first:
+
+1. Sign in to PyPI → <https://pypi.org/manage/account/publishing/> → *Add a pending publisher*.
+2. Fill in:
+   - **PyPI Project Name:** `o2cloud`
+   - **Owner:** `dbaratech`
+   - **Repository name:** `o2cloud`
+   - **Workflow name:** `publish.yml`
+   - **Environment name:** `pypi`
+3. (Recommended) In GitHub → *Settings → Environments*, create an environment named `pypi` and add
+   required reviewers so a release must be approved before it publishes.
+
+After the first successful publish, the pending publisher becomes a regular trusted publisher.
+
+### Cutting a release
+
+1. Bump the version in `pyproject.toml`, `src/o2cloud/__init__.py`, and the `user_agent` default in
+   `src/o2cloud/config.py` (all must match; the workflow fails if `pyproject.toml` and the tag differ).
+2. Add a `CHANGELOG.md` entry, commit, and open a PR / merge to `main`.
+3. Create a GitHub Release with a tag `vX.Y.Z` (matching the new version).
+4. The workflow runs the gate, builds the sdist + wheel, and publishes to PyPI.
+
 ## Reporting bugs and requesting features
 
 Open an issue with a clear description, the command you ran, the expected versus actual behaviour, and

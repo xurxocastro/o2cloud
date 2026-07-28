@@ -1,0 +1,64 @@
+name: Publish to PyPI
+
+# Publishes the package to PyPI when a GitHub Release is published.
+# Uses PyPI Trusted Publishing (OIDC) — no API tokens are stored in the repo.
+# One-time setup on PyPI is required (see CONTRIBUTING.md § Releasing).
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --extra dev
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy src
+      - run: uv run pytest -q
+
+  build:
+    name: Build distributions
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Verify the package version matches the release tag
+        run: |
+          version="$(grep -m1 '^version' pyproject.toml | sed -E 's/.*"([^"]+)".*/\1/')"
+          tag="${GITHUB_REF_NAME#v}"
+          echo "pyproject version: $version | release tag: $tag"
+          if [ "$version" != "$tag" ]; then
+            echo "::error::pyproject.toml version ($version) does not match the release tag ($tag). Bump the version before releasing."
+            exit 1
+          fi
+      - run: uv build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write # required for Trusted Publishing (OIDC)
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@release/v1
