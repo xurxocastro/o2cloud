@@ -23,6 +23,8 @@ from platformdirs import user_config_dir, user_state_dir
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from . import __version__
+
 APP_NAME = "o2cloud"
 DEFAULT_PROFILE = "default"
 
@@ -74,7 +76,7 @@ class AppConfig(BaseSettings):
         "``<upload_base_url>/sapi/upload?action=save``.",
     )
     user_agent: str = Field(
-        default="o2cloud/0.4.0",
+        default=f"o2cloud/{__version__}",
         description="App-mimicking User-Agent. TODO(live-capture): replace with the "
         "captured web/app User-Agent from docs/api-reference.md.",
     )

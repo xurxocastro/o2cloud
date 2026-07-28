@@ -1,5 +1,9 @@
 # o2cloud
 
+[![CI](https://github.com/dbaratech/o2cloud/actions/workflows/ci.yml/badge.svg)](https://github.com/dbaratech/o2cloud/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A scriptable, agent-friendly command-line client for **O2 Cloud** — the personal-cloud storage of
 O2 / Telefónica España (`cloud.o2online.es`). The backend is reached
 through the API namespace at `https://cloud.o2online.es/sapi/`.

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "o2cloud"
-version = "0.4.0"
+dynamic = ["version"]
 description = "Scriptable, agent-friendly command-line client for O2 Cloud (Funambol OneMediaHub / SAPI)."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -51,6 +51,9 @@ Documentation = "https://github.com/o2cloud/o2cloud#readme"
 
 [project.scripts]
 o2cloud = "o2cloud.cli:app"
+
+[tool.hatch.version]
+path = "src/o2cloud/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/o2cloud"]

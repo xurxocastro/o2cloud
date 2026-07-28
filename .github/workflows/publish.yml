@@ -35,11 +35,11 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - name: Verify the package version matches the release tag
         run: |
-          version="$(grep -m1 '^version' pyproject.toml | sed -E 's/.*"([^"]+)".*/\1/')"
+          version="$(grep -m1 '__version__' src/o2cloud/__init__.py | sed -E 's/.*"([^"]+)".*/\1/')"
           tag="${GITHUB_REF_NAME#v}"
-          echo "pyproject version: $version | release tag: $tag"
+          echo "package version: $version | release tag: $tag"
           if [ "$version" != "$tag" ]; then
-            echo "::error::pyproject.toml version ($version) does not match the release tag ($tag). Bump the version before releasing."
+            echo "::error::__version__ ($version) does not match the release tag ($tag). Bump src/o2cloud/__init__.py before releasing."
             exit 1
           fi
       - run: uv build
