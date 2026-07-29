@@ -35,7 +35,7 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - name: Verify the package version matches the release tag
         run: |
-          version="$(grep -m1 '__version__' src/o2cloud/__init__.py | sed -E 's/.*"([^"]+)".*/\1/')"
+          version="$(grep -m1 '^__version__' src/o2cloud/__init__.py | sed -E 's/.*"([^"]+)".*/\1/')"
           tag="${GITHUB_REF_NAME#v}"
           echo "package version: $version | release tag: $tag"
           if [ "$version" != "$tag" ]; then
