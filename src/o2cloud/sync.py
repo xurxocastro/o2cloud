@@ -129,11 +129,14 @@ def local_signature(path: Path) -> str:
 
 
 def remote_signature(item: MediaItem) -> str:
-    """A remote change signature: ETag if present, else ``size`` / ``date``."""
-    if item.etag:
-        return f"etag:{item.etag}"
+    """A remote change signature: size + ETag if present, else ``size`` / ``date``."""
+    parts = []
     if item.size is not None:
-        return f"size:{item.size}"
+        parts.append(f"size:{item.size}")
+    if item.etag:
+        parts.append(f"etag:{item.etag}")
+    if parts:
+        return ":".join(parts)
     return f"date:{item.date}"
 
 
@@ -336,6 +339,8 @@ class SyncEngine:
             return sigs, files
         for path in sorted(local_root.rglob("*")):
             if path.is_file():
+                if path.name.startswith("._") or path.name == ".DS_Store":
+                    continue
                 rel = path.relative_to(local_root).as_posix()
                 sigs[rel] = local_signature(path)
                 files[rel] = path
@@ -348,6 +353,8 @@ class SyncEngine:
             if item.mediatype == "folder":
                 continue
             name = item.name or item.id
+            if name.startswith("._") or name == ".DS_Store":
+                continue
             full = item.path or remote_join(remote_root, name)
             rel = _relativize(full, remote_root)
             sigs[rel] = remote_signature(item)
@@ -405,20 +412,22 @@ class SyncEngine:
             return computed
 
         executed: list[SyncAction] = []
+        total_actions = len(computed.actions)
         with SyncLock(mpath):
             writer = ManifestWriter(mpath, manifest)
-            for action in computed.actions:
-                executed.append(
-                    self._apply(
-                        action,
-                        local_root,
-                        remote_root,
-                        local_sigs,
-                        remote_sigs,
-                        remote_items,
-                        writer,
-                    )
+            for idx, action in enumerate(computed.actions, 1):
+                if action.op == "upload":
+                    print(f"[{idx}/{total_actions}] Subiendo {action.path}...", flush=True)
+                res = self._apply(
+                    action,
+                    local_root,
+                    remote_root,
+                    local_sigs,
+                    remote_sigs,
+                    remote_items,
+                    writer,
                 )
+                executed.append(res)
         return SyncPlan(actions=executed)
 
     def _apply(

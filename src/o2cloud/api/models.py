@@ -15,7 +15,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 
 _Provisional = ConfigDict(extra="allow", populate_by_name=True)
 
@@ -146,8 +146,15 @@ class Folder(_IdCoercingModel):
     offline: bool = False
     creationdate: int | str | None = None  # epoch-ms or formatted "YYYYMMDDThhmmssZ"
     date: int | None = None  # epoch-ms
-    parent_id: str | None = None
+    parent_id: str | None = Field(default=None, validation_alias=AliasChoices("parent_id", "parentid"))
     path: str | None = None
+
+    @field_validator("parent_id", mode="before", check_fields=False)
+    @classmethod
+    def _coerce_parent_id(cls, value: object) -> object:
+        if isinstance(value, (int, float)):
+            return str(int(value))
+        return value
 
 
 class MediaItem(_IdCoercingModel):
@@ -199,25 +206,21 @@ RemoteItem = Annotated[FileItem | FolderItem, Field(discriminator="kind")]
 """A remote entry, discriminated on ``kind`` (``file`` | ``folder``)."""
 
 
-class UploadResult(BaseModel):
+class UploadResult(_IdCoercingModel):
     """Response of the upload action: ``{success, id, etag, status, type}``.
 
     ``id`` = new item id; ``etag`` = integrity/resume validator.
     """
 
-    model_config = _Provisional
-
-    success: bool = False
+    success: bool | str = False
     id: str = ""
     etag: str | None = None
     status: str | None = None
     type: str | None = None
 
 
-class ValidationEntry(BaseModel):
+class ValidationEntry(_IdCoercingModel):
     """One ``{id, status}`` from ``action=get-validation-status``."""
-
-    model_config = _Provisional
 
     id: str
     status: str | None = None

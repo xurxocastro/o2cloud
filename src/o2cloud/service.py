@@ -24,7 +24,14 @@ from .api.trash import TrashApi
 from .config import AppConfig
 from .errors import ConflictError, NotFoundError, O2CloudError, ServerError, UsageError
 from .output import BatchItem
-from .paths import PathResolver, normalize_remote, remote_basename, remote_join, remote_parent
+from .paths import (
+    PathResolver,
+    normalize_remote,
+    remote_basename,
+    remote_join,
+    remote_parent,
+    split_segments,
+)
 from .secrets import SecretStore
 
 
@@ -159,12 +166,29 @@ class O2CloudService:
         self._walk(remote, out, detail=detail)
         return out
 
-    def _walk(self, remote: str, out: list[MediaItem], *, detail: bool = True) -> None:
+    def _walk(
+        self,
+        remote: str,
+        out: list[MediaItem],
+        *,
+        detail: bool = True,
+        visited: set[str] | None = None,
+    ) -> None:
+        if visited is None:
+            visited = set()
+        norm_remote = normalize_remote(remote)
+        visited.add(norm_remote)
         for entry in self.list_dir(remote, detail=detail):
-            entry.path = remote_join(remote, entry.name or entry.id)
+            name = (entry.name or entry.id).strip()
+            if not name or name in ("/", ".", ".."):
+                continue
+            entry.path = remote_join(remote, name)
+            norm_entry = normalize_remote(entry.path)
+            if norm_entry in visited:
+                continue
             out.append(entry)
             if entry.mediatype == "folder":
-                self._walk(entry.path, out, detail=detail)
+                self._walk(entry.path, out, detail=detail, visited=visited)
 
     def stat(self, remote: str) -> MediaItem:
         """Return metadata for a remote file or folder."""
@@ -180,14 +204,26 @@ class O2CloudService:
         return self.resolver.resolve_item(norm)
 
     # --- transfers (batch, conflict-aware) --------------------------------
+    def ensure_folder(self, remote_dest: str) -> str | None:
+        segments = split_segments(remote_dest)
+        parent_id: str | None = None
+        for seg in segments:
+            folder = self.resolver._find_child(seg, parent_id)
+            if folder is None:
+                created = self.folders.create(seg, parent_id=parent_id)
+                parent_id = str(created.id)
+            else:
+                parent_id = str(folder.id)
+        return parent_id
+
     def upload(
         self, sources: list[Path], remote_dest: str, *, policy: ConflictPolicy
     ) -> list[BatchItem]:
         """Upload one or more local files to a remote folder path."""
         try:
             folder_id = self.resolver.resolve_folder(remote_dest)
-        except NotFoundError as exc:
-            return [BatchItem.failed(str(s), exc) for s in sources]
+        except NotFoundError:
+            folder_id = self.ensure_folder(remote_dest)
 
         items: list[BatchItem] = []
         for source in sources:

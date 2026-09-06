@@ -12,6 +12,41 @@ through the API namespace at `https://cloud.o2online.es/sapi/`.
 with a stable `--json` output contract and frozen exit codes so scripts and AI agents can drive it
 reliably.
 
+## 🚀 Guía rápida para usar desde otro ordenador (Fork parcheado)
+
+Este fork de **`xurxocastro/o2cloud`** contiene correcciones críticas sobre el paquete original que resuelven incompatibilidades reales con la API de O2 España (recursión infinita en árbol de carpetas, resolución de fotos, auto-creación de carpetas, tipado en subidas y filtros de archivos temporales de macOS).
+
+### 1. Clonar e instalar en otro equipo
+
+```bash
+git clone https://github.com/xurxocastro/o2cloud.git
+cd o2cloud
+
+# Crear entorno virtual e instalar dependencias
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+pip install playwright
+playwright install chromium
+```
+
+### 2. Iniciar sesión (con verificación SMS)
+
+Ejecuta el asistente interactivo:
+```bash
+python3 scripts/auto_login.py --email tu_email@ejemplo.com
+```
+Se abrirá una ventana de Chromium en tu pantalla con tu usuario precargado; introduce el SMS que recibas en tu teléfono y la sesión se guardará automáticamente en el sistema.
+
+### 3. Sincronizar directorios
+
+Para subir una biblioteca completa (evitando que el equipo se suspenda si estás en macOS):
+```bash
+./scripts/run_sync.sh "/ruta/a/tus/fotos" "/2026"
+```
+
+---
+
 ## Status and disclaimer
 
 > **Unofficial interoperability client.** `o2cloud` is not affiliated with, endorsed by, or supported

@@ -34,7 +34,10 @@ class FoldersApi:
             body = {"data": {"parent": parent_id}}
         data = self._client.post("/media/folder", params={"action": "get"}, json_body=body)
         folders = data.get("folders", []) if isinstance(data, dict) else []
-        return [Folder.model_validate(f) for f in folders]
+        items = [Folder.model_validate(f) for f in folders]
+        if parent_id is not None:
+            items = [f for f in items if str(f.parent_id) == str(parent_id)]
+        return items
 
     def create(self, name: str, *, parent_id: str | None = None) -> Folder:
         """Create a folder. ``POST /sapi/media/folder?action=save``."""
@@ -44,7 +47,8 @@ class FoldersApi:
         data = self._client.post(
             "/media/folder", params={"action": "save"}, json_body={"data": folder}
         )
-        return Folder.model_validate(data)
+        payload = data.get("folder", data) if isinstance(data, dict) else data
+        return Folder.model_validate(payload)
 
     def rename(self, folder_id: str, new_name: str) -> Folder:
         """Rename a folder. ``POST /sapi/media/folder?action=save`` with its id."""
@@ -53,7 +57,8 @@ class FoldersApi:
             params={"action": "save"},
             json_body={"data": {"id": folder_id, "name": new_name}},
         )
-        return Folder.model_validate(data)
+        payload = data.get("folder", data) if isinstance(data, dict) else data
+        return Folder.model_validate(payload)
 
     def delete(self, folder_id: str, *, permanent: bool = False) -> None:
         """Delete a folder (soft by default → trash; ``permanent`` = hard delete)."""

@@ -20,12 +20,18 @@ from typing import Any
 from .client import SapiClient
 from .models import MediaItem, MediaListing, UploadResult, ValidationEntry
 
-# Media-type → per-type SAPI sub-resource for detail/export calls.
+# Media-type → per-type SAPI sub-resource and JSON payload key for detail/export calls.
 _TYPE_RESOURCE = {
     "file": "file",
     "picture": "picture",
     "video": "video",
     "audio": "audio",
+}
+_TYPE_KEY = {
+    "file": "files",
+    "picture": "pictures",
+    "video": "videos",
+    "audio": "audios",
 }
 
 
@@ -49,42 +55,31 @@ class MediaApi:
         return MediaListing.model_validate(data)
 
     def get(self, item_id: str, *, mediatype: str = "file") -> MediaItem:
-        """Fetch a single item's full metadata (CONFIRMED live 2026-07-22).
-
-        ``POST /sapi/media/file?action=get {data:{files:[{id}]}}`` →
-        ``data.files[0]`` with ``{id, url, name, size, etag, mediatype,
-        creationdate, modificationdate, uploaded, status, softdeleted}``. The
-        ``url`` field is the direct download link (see :meth:`SapiClient.download_url`).
-        (``POST /sapi/media?action=get {data:{ids:[{id}]}}`` returns ``MED-1000`` — not this.)
-        """
+        """Fetch a single item's full metadata (CONFIRMED live 2026-07-22)."""
         resource = _TYPE_RESOURCE.get(mediatype, "file")
+        key = _TYPE_KEY.get(mediatype, "files")
         data = self._client.post(
             f"/media/{resource}",
             params={"action": "get"},
-            json_body={"data": {"files": [{"id": item_id}]}},
+            json_body={"data": {key: [{"id": item_id}]}},
         )
         # The detail endpoint may wrap the item in a list/keyed object; normalise.
         item = _first_item(data, item_id)
         return MediaItem.model_validate(item)
 
     def get_many(self, item_ids: Sequence[str], *, mediatype: str = "file") -> Sequence[MediaItem]:
-        """Batch-fetch full metadata for several items of the **same** mediatype.
-
-        Extends the confirmed single-id detail call
-        (``POST /sapi/media/<type>?action=get {data:{files:[{id},…]}}``) to N ids in
-        one round-trip — used by ``ls`` to resolve names without one call per file.
-        The server may return fewer items than requested; callers merge by id.
-        """
+        """Batch-fetch full metadata for several items of the **same** mediatype."""
         ids = [i for i in item_ids if i]
         if not ids:
             return []
         resource = _TYPE_RESOURCE.get(mediatype, "file")
+        key = _TYPE_KEY.get(mediatype, "files")
         data = self._client.post(
             f"/media/{resource}",
             params={"action": "get"},
-            json_body={"data": {"files": [{"id": i} for i in ids]}},
+            json_body={"data": {key: [{"id": i} for i in ids]}},
         )
-        raw = data.get("files") if isinstance(data, dict) else None
+        raw = (data.get(key) or data.get("files")) if isinstance(data, dict) else None
         return [MediaItem.model_validate(x) for x in (raw or [])]
 
     # --- upload choreography ---------------------------------------------
